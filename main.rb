@@ -11,9 +11,10 @@ end
 APP = App.new
 
 get '/' do
-  'This is a JWT demo'
+  File.read(File.join("public", "index.html"))
 end
 
+# Check token before any access to API
 before '/api/*' do
   auth_header = env['HTTP_AUTHORIZATION']
   halt 401 unless auth_header
@@ -26,12 +27,19 @@ before '/api/*' do
   env['USER_INFO'] = user_info
 end
 
+# A bogus API method
 get '/api/secret' do
   "The secret is #{rand(10000)}, #{env['USER_INFO']['name']}"
 end
 
-post '/oath/token' do
+# Login
+post '/user/login' do
   input = JSON.parse request.body.read
+  if input['refresh']
+    user_input = APP.decode_token(input['refresh'])
+    halt 401 unless user_input
+    input = user_input
+  end
   user_info = APP.user_directory_lookup(input['user'], input['password'])
   halt 401 unless user_info 
   output = {

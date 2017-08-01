@@ -1,0 +1,117 @@
+<head>
+  <title>Cloudturnip</title>
+</head>
+
+<body>
+  <h1>Cloudturnip</h1>
+  <p><span class="label">Access token:</span> <span class="value" id="access_token_span"></span></p>
+  <p><span class="label">Refresh token:</span> <span class="value" id="refresh_token_span"></span></p>
+  <p><button type="button" id="refresh_button" disabled>Refresh</button>
+  <p>
+    <span class="label">User name:</span> <input type="text" id="user_name_input" value="test"/>
+    <span class="label">Password:</span> <input type="password" id="password_input" value="test"/>
+    <button type="button" id="log_in_button">Log in</button>
+  </p>
+  <p><button type="button" id="api_button" disabled>Hit the API</button></p>
+  <p><textarea id="api_textarea" rows="10" cols="80"></textarea></p>
+</body>
+
+<script>
+  function displayUserData() {
+    var accessToken = localStorage.access_token || "None";
+    document.getElementById("access_token_span").innerHTML = accessToken;
+    var refreshToken = localStorage.refresh_token || "None";
+    document.getElementById("refresh_token_span").innerHTML = refreshToken;
+    document.getElementById("refresh_button").disabled = !refreshToken;
+    document.getElementById("api_button").disabled = !accessToken;
+  }
+
+  function updateUserData(json) {
+    for (var key in json) {
+      localStorage[key] = json[key];
+    }
+    displayUserData();
+  }
+
+  function postJson(url, params, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          callback(xhr.responseText);
+        }
+        else {
+          alert("status " + xhr.status);
+        }
+      }
+    }
+    xhr.send(JSON.stringify(params));
+  }
+
+  function logInWithParams(params) {
+    postJson("/user/login", params, function(responseText) {
+      updateUserData(JSON.parse(responseText));
+    });
+  }
+
+  function logOut() {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    displayUserData();
+  }
+
+  function logIn() {
+    logOut();
+    var userName = document.getElementById("user_name_input").value;
+    var password = document.getElementById("password_input").value;
+    logInWithParams({ user: userName, password: password });
+  }
+
+  function refresh() {
+    logInWithParams({ refresh: localStorage.refresh_token });
+  }
+
+  function callApi() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/api/secret", true);
+    xhr.setRequestHeader("Authorization", "Bearer " + localStorage.access_token);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          document.getElementById("api_textarea").innerHTML = xhr.responseText;
+        }
+        else {
+          alert("status " + xhr.status);
+        }
+      }
+    }
+    xhr.send();
+  }
+
+  function init() {
+    if (typeof(Storage) == "undefined") {
+      alert("No Web Storage support - this demo is hosed.");
+    }
+    else {
+      displayUserData();
+      document.getElementById("log_in_button").addEventListener("click", logIn);
+      document.getElementById("refresh_button").addEventListener("click", refresh);
+      document.getElementById("api_button").addEventListener("click", callApi);
+    }
+  }
+
+  window.onload = init;
+</script>
+
+<style>
+body {
+  font-family: Arial;
+}
+.label {
+  font-weight: bold;
+}
+.value {
+}
+</style>
