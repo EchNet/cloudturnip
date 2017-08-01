@@ -1,14 +1,15 @@
 ##### Mocked up user directory
 
+require 'active_record'
+
+class User < ActiveRecord::Base
+end
+
 module UserDirectory
 
-  USERS = {
-    'test' => { password: 'test', info: { name: 'Francis McDonald' } }
-  }
-
   def user_directory_lookup(user, password)
-    entry = USERS[user]
-    return nil unless entry && entry[:password] == password
-    entry[:info]
+    user = User.where({ email: user }).first
+    return nil unless user
+    { email: user.email, api_key: user.api_key, name: user.name }
   end
 end

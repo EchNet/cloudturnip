@@ -1,7 +1,16 @@
 require 'sinatra'
 require 'json'
+require 'active_record'
 require_relative 'smokin_token'
 require_relative 'user_directory'
+
+ActiveRecord::Base.establish_connection(
+  :adapter => 'mysql2',
+  :encoding => 'utf8',
+  :database => 'cloudpercept',
+  :username => 'cloudpercept_dev',
+  :password => 'Cl0udPercept123',
+)
 
 class App
   include SmokinToken

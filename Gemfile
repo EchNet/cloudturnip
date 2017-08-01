@@ -1,2 +1,11 @@
-gem 'sinatra'
+source 'https://rubygems.org'
+
+gem 'activerecord'
+gem 'mysql2'
+gem 'memoist'
+gem 'rake'
 gem 'jwt'
+gem 'sinatra', '~> 1.4.7', require: 'sinatra/base'
+gem 'sinatra-contrib', '~> 1.4.7'
+gem 'rack-protection'
+gem 'puma', '~> 3.8.0'
