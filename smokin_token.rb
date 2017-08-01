@@ -1,4 +1,5 @@
 require 'jwt'
+require 'time'
 
 module SmokinToken
 
@@ -6,8 +7,8 @@ module SmokinToken
   HMAC_SECRET = 'Cl0udhealth123$'
 
   HMAC_ALGORITHM = 'HS256'
-  ACCESS_DURATION_SECONDS = 30*60          # 30 seconds
-  REFRESH_DURATION_SECONDS = 7*24*60*60    # 7 days
+  ACCESS_DURATION_SECONDS = 30          # 30 seconds
+  REFRESH_DURATION_SECONDS = 7*60*60    # 7 hours
 
   def encode(info)
     JWT.encode info, HMAC_SECRET, HMAC_ALGORITHM
@@ -21,13 +22,6 @@ module SmokinToken
     info.merge({ :expiry => (Time.now + duration_seconds).to_s })
   end
 
-  def valid_date(expiry_str)
-    expiry_date = Date.parse(expiry_str)
-    expiry_date > Time.now && expiry_date < Time.now + REFRESH_DURATION_SECONDS
-  rescue
-    false
-  end
-
   def generate_access_token(user_info)
     encode add_expiry(user_info, ACCESS_DURATION_SECONDS)
   end
@@ -39,7 +33,16 @@ module SmokinToken
   def decode_token(encoded_token)
     user_info = decode encoded_token
     user_info = user_info[0]
-    #return nil unless valid_date user_info['expiry']
+    begin
+      expiry_time = Time.parse(user_info['expiry'])
+    rescue
+      return nil
+    end
+puts "expiry time #{expiry_time}"
+    return nil if expiry_time < Time.now
+puts "expiry time is in the future.  now #{Time.now}"
+    return nil if expiry_time > Time.now + REFRESH_DURATION_SECONDS
+puts "expiry time is soon"
     user_info
   end
 end
