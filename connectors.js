@@ -28,7 +28,7 @@ module.exports = {
   moduleLoader: {
     loadModule: function(moduleName) {
       return new Promise(function(resolve, reject) {
-        resolve(require("./modules/" + moduleName));
+        resolve(require("./turnips/" + moduleName));
       });
     }
   }

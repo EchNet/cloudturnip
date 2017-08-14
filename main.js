@@ -1,21 +1,51 @@
 const Promise = require("promise");
 const Connectors = require("./connectors");
 
-console.log("Cloudturnip started", new Date());
+console.log("Eval started", new Date());
 
-function getModuleList() {
-  var modules = [];
-  // All args are module names, for now.
+function parseArgs() {
+  var inputs = {
+    options: {},
+    modules: []
+  }
   process.argv.forEach((arg, index) => {
     if (index > 1) {
-      modules.push(arg);
+      var m = arg.match(/--(\w+)(=(\w+))?/);
+      if (m) {
+        name = m[1];
+        value = m[2] ? m[3] : true;
+        inputs.options[name] = value;
+      }
+      else if (arg.startsWith("-")) {
+        throw "Unknown option: " + arg;
+      }
+      else {
+        inputs.modules.push(arg);
+      }
     }
   });
-  return modules;
+  return inputs;
 }
 
-function runAllModules() {
-  var modules = getModuleList();
+function createContext(contextInfo) {
+  return {
+    query: function(queryString) {
+      var queryData = { items: [ { cpu: 50 }, { cpu: 75 }, { cpu: 80 } ] }; // TODO: connect to query service.
+      contextInfo.queryString = queryString;
+      contextInfo.queryData = queryData;
+      return Promise.resolve(queryData);
+    },
+    emitViolation: function(message, violationInfo) {
+      // TODO: connect to kafka.
+      console.log('violation', contextInfo, violationInfo);
+      return Promise.resolve();
+    }
+  }
+}
+
+function runAllModules(inputs) {
+  console.log("options", inputs.options);
+  var modules = inputs.modules;
   return (function go() {
     return new Promise((resolve, reject) => {
       var moduleName = modules.shift();
@@ -27,7 +57,7 @@ function runAllModules() {
         resolve(Connectors.moduleLoader.loadModule(moduleName)
         .then((Module) => {
           console.log("Run module", moduleName);
-          return new Module().run();
+          return new Module(inputs.options).run(createContext({ moduleName: moduleName }));
         })
         .then((results) => {
           console.log("Result of module", moduleName, "=", results);
@@ -38,12 +68,12 @@ function runAllModules() {
   })()
 }
 
-runAllModules().then(() => {
-  console.log("Cloudturnip finished", new Date());
+runAllModules(parseArgs()).then(() => {
+  console.log("Eval finished", new Date());
   process.exit(0);
 })
 .catch((error) => {
   console.error(error);
-  console.log("Cloudturnip exiting prematurely", new Date());
+  console.log("Eval exiting prematurely", new Date());
   process.exit(1);
 })
